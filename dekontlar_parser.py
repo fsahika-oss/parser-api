@@ -118,7 +118,7 @@ def normalize(s):
 def banka_tespit(text):
     up = text.upper()
 
-        # İŞ BANKASI — güvenli tespit
+    # İŞ BANKASI — güvenli tespit
     if ("ISBANK.COM.TR" in up
         or "İŞCEP" in up
         or "ISCEP" in up
@@ -132,13 +132,13 @@ def banka_tespit(text):
     if "DENIZBANK" in up or "DENİZBANK" in up or "DENIZ BANK" in up:
         return "denizbank"
 
-    # GARANTİ
-    if "GARANTI" in up or "GARANTİ" in up:
-        return "garanti"
-
     # ENPARA / FİNANSBANK / QNB
     if "ENPARA" in up or "FINANSBANK" in up or "FİNANSBANK" in up or "QNB" in up:
         return "enpara"
+
+    # GARANTİ
+    if "GARANTI" in up or "GARANTİ" in up:
+        return "garanti"
 
     # VAKIFBANK
     if "VAKIFBANK" in up or "T. VAKIFLAR BANKASI" in up:
