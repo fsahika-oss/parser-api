@@ -161,7 +161,6 @@ def banka_tespit(text):
         "ING BANK" in up
         or "İNG BANK" in up
         or "INGBANK" in up
-        or "MAAŞ ÖDEME" in up  # ING'e özgü dekont başlığı
     ):
         return "ing"
     
