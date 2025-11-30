@@ -171,6 +171,18 @@ def banka_tespit(text):
     # VAKIF KATILIM
     if "VAKIF KATILIM" in up or "VAKIF KATILIM BANKASI" in up or "VAKIFKATILIM" in up:
         return "vakifkatilim"
+    
+    # ⭐ AKBANK — (YENİ EKLEDİK)
+    if (
+        "AKBANK" in up
+        or "AKBANK T.A.Ş" in up
+        or "WWW.AKBANK.COM" in up
+        or "AKBANK T.A.Ş." in up
+        or "GENEL MÜDÜRLÜK: SABANCI CENTER" in up  # çoğu dekontta geçer
+        or "VERGİ NO: 0150015264" in up            # Akbank'ın sabit vergi no'su
+        or "TR04 0004" in up                      # Akbank IBAN prefix
+    ):
+        return "akbank"
 
     
 
