@@ -1005,7 +1005,7 @@ def parse_yapikredi(text):
             data["islemtarihi"] = m.group(1)
 
         # Tutar
-        m = re.search(r"TOPLAM TAHSİLAT TUTARI\s*:\s*-?([\d\.,]+)", raw, re.I)
+        m = re.search(r"GİDEN FAST TUTARI\s*:\s*-?([\d\.,]+)", raw, re.I)
         if m:
             data["tutar"] = parse_amount(m.group(1))
 
