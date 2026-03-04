@@ -11,7 +11,7 @@ class GarantiParser(BaseParser):
         t = self.text
         TU = self.up
         
-        # --- Dahili Yardımcı Fonksiyon (Eski kodundaki temizleme mantığı) ---
+        # --- Dahili Yardımcı Fonksiyon ---
         def clean_name_line(s):
             if not s: return s
             s = s.strip()
@@ -23,19 +23,24 @@ class GarantiParser(BaseParser):
             s = re.sub(r"^[\*\s\/\-\d]+", "", s)
             s = re.sub(r"\b\d{2,6}\s*\/\s*\d{3,10}\b", "", s)
             s = re.sub(r"\*{2,}.*?(?=[A-ZÇĞİÖŞÜ])", "", s)
-            # Adres ve gereksiz kelimeleri kes
             s = re.split(r"\b(MAH|MAH\.|SOK|SOK\.|CAD|CAD\.|SK|SK\.|NO:|NO|KAPI|BULVAR|BLV|APT|DAIRE|DAİRE)\b", s, flags=re.I)[0].strip()
             s = re.sub(r"\bIBAN\b.*", "", s, flags=re.I).strip()
             return s
 
         # 1. Genel Bilgiler
-        m = re.search(r"IBAN\s*[:]?\s*(TR[0-9 ]{20,34})", t)
+        # IBAN: Hem tek satır hem de etiketli aramayı kapsar
+        m = re.search(r"IBAN\s*[:]?\s*(TR[0-9 ]{20,34})", t, re.I)
         top_iban = m.group(1).replace(" ", "") if m else None
 
         m = re.search(r"(İŞLEM|ISLEM)\s*TAR(İ|I)H(İ|I)\s*[: ]+(\d{2}[./]\d{2}[./]\d{4})", t, re.I)
-        if m: self.data["islemtarihi"] = m.group(4).replace("/", ".")
+        if m: 
+            self.data["islemtarihi"] = m.group(4).replace("/", ".")
+        else:
+            m = re.search(r"DÜZENLENME TARİHİ\s*[:]\s*(\d{2}[./]\d{2}[./]\d{4})", t, re.I)
+            if m: self.data["islemtarihi"] = m.group(1).replace("/", ".")
 
-        m = re.search(r"TUTAR\s*:?\s*[+\- ]*\s*([\d\.,]+)", t)
+        # Tutar Yakalama: SIRA NO içeren yeni satır yapısı için esnetildi
+        m = re.search(r"TUTAR\s*[:]?\s*[+\- ]*\s*([\d\.,]+)", t, re.I)
         if m: self.data["tutar"] = parse_amount(m.group(1))
 
         sayin = None
@@ -44,22 +49,36 @@ class GarantiParser(BaseParser):
 
         # 2. Format Tespiti
         is_fast = "FAST" in TU
+        is_gelen_fast = "GELEN FAST" in TU # Yeni formatın anahtarı
         is_maas = (("MAAŞ" in TU or "MAAS" in TU) and ("KURUM" in TU or "MAAS ÖDEMESİ" in TU))
         has_borclu = ("BORÇLU" in TU) or ("BORCLU" in TU)
         has_alacakli = "ALACAKLI" in TU
 
-        if top_iban and not has_borclu:
-            self.data["gondereniban"] = top_iban
-
         # 3. Branşlara Göre Ayrıştırma
-        if is_fast:
+        if is_gelen_fast:
+            # --- YENİ GELEN FAST FORMATI ---
+            # Bu formatta 'SAYIN' olan kişi ALICI'dır.
+            if sayin: self.data["alici"] = sayin
+            self.data["aliciiban"] = top_iban
+            
+            m = re.search(r"GÖNDEREN\s*:\s*([^\n\r]+)", t, re.I)
+            if m: self.data["gonderen"] = clean_name_line(m.group(1))
+            
+            # Gönderen IBAN bu dekontta genellikle yer almaz, alıcı IBAN'ı kaydedilir.
+            self.data["gondereniban"] = ""
+
+        elif is_fast:
+            # --- ESKİ GİDEN FAST FORMATI ---
             if sayin: self.data["gonderen"] = sayin
+            if top_iban: self.data["gondereniban"] = top_iban
+            
             m = re.search(r"ALACAKLI\s*:\s*([^\n\r]+)", t, re.I)
             if m: self.data["alici"] = clean_name_line(m.group(1))
             m = re.search(r"ALACAKLI IBAN\s*:\s*(TR[0-9 ]+)", t)
             self.data["aliciiban"] = m.group(1).replace(" ", "") if m else top_iban
         
         elif is_maas:
+            # --- MAAŞ FORMATI ---
             if sayin: self.data["alici"] = sayin
             m = re.search(r"KURUM\s*:\s*([^\n\r]+)", t, re.I)
             if m: self.data["gonderen"] = clean_name_line(m.group(1))
