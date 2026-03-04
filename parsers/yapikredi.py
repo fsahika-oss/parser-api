@@ -9,10 +9,43 @@ class YapiKrediParser(BaseParser):
 
     def parse(self):
         raw = self.text
-        # Satır sonlarını boşluğa çevirerek etiket aramayı garantiye alıyoruz
+        # Satır sonlarını koruyan bir kopya (Rapor formatı için lazım)
+        lines = raw.split('\n')
+        
+        # Standart temizleme
         clean_raw = raw.replace("\n", "  ").replace("\t", " ")
         up = to_turkish_upper(clean_raw)
 
+        # --- ÖZEL FORMAT TESPİTİ: MAAŞ ÖDEME RAPORU ---
+        if "MAAŞ ÖDEME RAPORU" in up or "FIRMA ÜNVANI" in up:
+            self.data["is_maas"] = True
+            self.data["is_giden"] = True
+            
+            # Gönderen: Firma Ünvanı satırından
+            m_firma = re.search(r"Firma Ünvanı\s*:\s*([^\n\r]+)", raw, re.I)
+            if m_firma: self.data["gonderen"] = to_turkish_upper(m_firma.group(1).strip())
+            
+            # Tablo Satırını Yakalama (Tutar ve Tarih burada yan yana)
+            # Örn: 292 TL ARDA ÇELİK 24593930 ÖDEMESİ 9.909,00 02/03/2026
+            for line in lines:
+                if "ÖDENDİ" in line.upper() or "ÖDEMESİ" in line.upper():
+                    # Tutar: Virgüllü rakam (Örn: 9.909,00)
+                    m_val = re.search(r"(\d{1,3}(?:\.\d{3})*,\d{2})", line)
+                    if m_val: self.data["tutar"] = parse_amount(m_val.group(1))
+                    
+                    # Tarih: GG/AA/YYYY
+                    m_dt = re.search(r"(\d{2}/\d{2}/\d{4})", line)
+                    if m_dt: self.data["islemtarihi"] = m_dt.group(1).replace("/", ".")
+                    
+                    # Alıcı: TL ibaresinden sonra, rakamlardan önceki isim
+                    # Örn: TL ARDA ÇELİK 24593930
+                    m_name = re.search(r"TL\s+([A-ZÇĞİÖŞÜ\s]+?)\s+\d+", line, re.I)
+                    if m_name: self.data["alici"] = to_turkish_upper(m_name.group(1).strip())
+            
+            # Raporlarda genellikle gönderen/alıcı IBAN bu satırda açıkça TR... olarak geçmez.
+            return self.finalize()
+
+        # --- STANDART DEKONT FORMATI (Eski Kodunuz - Dokunulmadı) ---
         # 1. Tür ve Yön Tespiti
         if "FAST" in up: self.data["is_fast"] = True
         if "EFT" in up: self.data["is_eft"] = True
@@ -35,18 +68,15 @@ class YapiKrediParser(BaseParser):
             self.data["tutar"] = parse_amount(val)
 
         # 4. İsimleri Yakalama
-        # Gönderen
         m_g1 = re.search(r"GÖNDEREN\s*ADI\s*:\s*(.+?)(?=\s*ÖDEMENİN|\s*ALICI|$)", clean_raw, re.I)
         m_g2 = re.search(r"ÖDEME\s*YAPAN\s*İSİM/ÜNVAN\s*:\s*(.+?)(?=\s*YUKARIDAKİ|$)", clean_raw, re.I)
         self.data["gonderen"] = to_turkish_upper((m_g1.group(1) if m_g1 else m_g2.group(1) if m_g2 else "").strip())
 
-        # Alıcı
         m_a1 = re.search(r"ALICI\s*ADI\s*:\s*(.+?)(?=\s*ALICI\s*TCKN|\s*AÇIKLAMA|$)", clean_raw, re.I)
         m_a2 = re.search(r"AÇIKLAMA:.*?/\s*([A-ZÇĞİÖŞÜ\s]+?)(?=\s*Ticari\s*Unvan|$)", clean_raw, re.I)
         self.data["alici"] = to_turkish_upper((m_a1.group(1) if m_a1 else m_a2.group(1) if m_a2 else "").strip())
 
-        # 5. IBAN Yakalama (Etiket Bazlı Kesin Çözüm)
-        # Giden FAST dekontu için etiketlerden çek
+        # 5. IBAN Yakalama
         m_sender_iban = re.search(r"GÖNDEREN\s+HESAP\s+NO\s*:[^:]*IBAN\s*:\s*(TR[0-9 ]+)", clean_raw, re.I)
         m_receiver_iban = re.search(r"ALICI\s+HESAP\s*:\s*(TR[0-9 ]+)", clean_raw, re.I)
 
@@ -55,10 +85,7 @@ class YapiKrediParser(BaseParser):
         if m_receiver_iban:
             self.data["aliciiban"] = m_receiver_iban.group(1).replace(" ", "").strip()[:26]
 
-        # Maaş/Alacak Dekontu (Gelen) için özel kural
         if not self.data["is_giden"]:
-            # Eğer alıcı IBAN doluysa ama gönderen boşsa (Maaş dekontunda genelde tek IBAN olur)
-            # Senin sistem kurgun için o tek IBAN'ı gönderene çekip alıcıyı boşaltıyoruz.
             current_ibans = re.findall(r"TR[0-9 ]{20,34}", clean_raw)
             if current_ibans:
                 self.data["gondereniban"] = current_ibans[0].replace(" ", "").strip()[:26]
