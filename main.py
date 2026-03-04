@@ -26,14 +26,24 @@ def extract_text(filepath):
     return normalize_text(text)
 
 def banka_tespit(text):
+    # 1. Metni satırlara böl
     lines = text.split('\n')
-    # "ALICI BANKA" veya "ALICI ADI" gibi yanıltıcı satırları temizleyip yeni bir metin oluşturuyoruz
-    filtered_text = "\n".join([l for l in lines if "ALICI BANKA" not in l.upper() and "BANKA " not in l.upper()])
     
-    # Artık aramayı bu temizlenmiş (filtered_text) üzerinden yapıyoruz
-    up = filtered_text.upper()
+    # 2. Yanıltıcı satırları (AlıcıBanka gibi) temizle
+    # Boşluksuz kontrol yaparak "AlıcıBanka" ve "Alıcı Banka" versiyonlarını eliyoruz.
+    filtered_lines = []
+    for line in lines:
+        line_up_no_space = line.upper().replace(" ", "")
+        if "ALICIBANKA" in line_up_no_space:
+            continue
+        filtered_lines.append(line)
+    
+    clean_text = "\n".join(filtered_lines)
+    up = clean_text.upper()
     
     # Senin eski kodundaki tespit mantığının özeti:
+    if "KUVEYT" in up: 
+        return "kuveytturk"    
     if "WWW.ISBANK.COM.TR" in up or "İŞCEP" in up or "ISCEP" in up or "TÜRKİYE İŞ BANKASI A.Ş." in up:
         return "isbank"     
     if "DENIZBANK" in up or "DENİZBANK" in up or "DENIZ GAYRIMENKUL" in up:
@@ -52,8 +62,6 @@ def banka_tespit(text):
         return "ziraat"  
     if "WWW. ING.COM.TR" in up or "ING BANK A.Ş." in up: 
         return "ing"    
-    if "KUVEYTTURK" in up or "KUVEYT" in up: 
-        return "kuveytturk"
     if any(x in up for x in ["VAKIF KATILIM", "VAKIFKATILIM"]): 
         return "vakifkatilim"       
     if ("AKBANK" in up or "AKBANK T.A.Ş" in up or "WWW.AKBANK.COM" 
