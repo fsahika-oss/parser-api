@@ -14,22 +14,53 @@ def normalize_text(t):
     return re.sub(r"[ \t]+", " ", t).strip()
 
 def parse_amount(s):
-    s = (s or "").strip()
-    if not s: return None
-    s = re.sub(r"[^\d\-,\.]", "", s)
+    if not s:
+        return None
+
+    s = str(s).strip()
+
+    # Para dışı karakterleri temizle
+    s = re.sub(r"[^\d,.\-]", "", s)
+
+    if not s:
+        return None
+
+    # negatif kontrol
     neg = s.startswith("-")
-    if neg: s = s[1:]
-    if "." in s and "," in s:
-        if s.rfind(".") > s.rfind(","): s = s.replace(",", "")
-        else: s = s.replace(".", "").replace(",", ".")
-    else:
-        if "," in s and "." not in s: s = s.replace(",", ".")
-        elif "." in s and "," not in s:
-            if len(s.split(".")[-1]) == 3: s = s.replace(".", "")
+    if neg:
+        s = s[1:]
+
+    # hem nokta hem virgül varsa
+    if "," in s and "." in s:
+        # hangisi en sonda ise ondalık odur
+        if s.rfind(",") > s.rfind("."):
+            s = s.replace(".", "")
+            s = s.replace(",", ".")
+        else:
+            s = s.replace(",", "")
+
+    # sadece virgül varsa
+    elif "," in s:
+        parts = s.split(",")
+        if len(parts[-1]) == 2:
+            s = s.replace(".", "")
+            s = s.replace(",", ".")
+        else:
+            s = s.replace(",", "")
+
+    # sadece nokta varsa
+    elif "." in s:
+        parts = s.split(".")
+        if len(parts[-1]) == 2:
+            s = s.replace(",", "")
+        else:
+            s = s.replace(".", "")
+
     try:
         val = float(s)
         return -val if neg else val
-    except: return None
+    except:
+        return None
 
 def dbg(msg):
     log_path = os.path.join(os.path.dirname(__file__), "parser_debug.log")
