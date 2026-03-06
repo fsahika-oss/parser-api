@@ -79,11 +79,21 @@ class GarantiParser(BaseParser):
         
         elif is_maas:
             # --- MAAŞ FORMATI ---
-            if sayin: self.data["alici"] = sayin
+
+            # Önce ADI satırını yakala (ŞUBE ADI hariç)
+            m = re.search(r"(?m)^\s*ADI\s*:\s*([^\n\r]+)", t, re.I)
+            if m:
+                self.data["alici"] = clean_name_line(m.group(1))
+            elif sayin:
+                self.data["alici"] = sayin
+
             m = re.search(r"KURUM\s*:\s*([^\n\r]+)", t, re.I)
-            if m: self.data["gonderen"] = clean_name_line(m.group(1))
+            if m:
+                self.data["gonderen"] = clean_name_line(m.group(1))
+
             m = re.search(r"ALICI\s*IBAN\s*:\s*(TR[0-9 ]+)", t)
             self.data["aliciiban"] = m.group(1).replace(" ", "") if m else top_iban
+
             self.data["gondereniban"] = ""
             
         else: # Havale Branch
