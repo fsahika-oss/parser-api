@@ -35,15 +35,28 @@ class EnparaParser(BaseParser):
                 if m: self.data["islemtarihi"] = m.group(1).replace("/", ".")
 
             # 3. Tutar
-            m_tutar = re.search(r"TUTARI\s*:\s*([\d\.,]+)", raw, re.I)
+            # Önce gerçek EFT tutarı
+            m_tutar = re.search(r"EFT\s*TUTARI\s*:\s*([\d\.,]+)", raw, re.I)
+
+            # yoksa genel TUTARI
+            if not m_tutar:
+                m_tutar = re.search(r"TUTARI\s*:\s*([\d\.,]+)", raw, re.I)
+
+            # son fallback
             if not m_tutar:
                 m_tutar = re.search(r"TL\s+([\d\.,]+)", raw)
+
             if m_tutar:
-                self.data["tutar"] = parse_amount(m_tutar.group(1))
+                amount = m_tutar.group(1)
+
+                # binlik ayıracı temizle
+                amount = amount.replace(",", "")
+
+                self.data["tutar"] = parse_amount(amount)
 
             # 4. Giden İşlem
             if self.data["is_giden"]:
-                m_g = re.search(r"GONDEREN\s*[:\s]\s*([^\n]+)", raw, re.I)
+                m_g = re.search(r"G[ÖO]NDEREN\s*[:\s]\s*([^\n]+)", raw, re.I)
                 if m_g:
                     self.data["gonderen"] = re.split(r"AÇIKLAMA|IBAN", m_g.group(1), flags=re.I)[0].strip()
 
