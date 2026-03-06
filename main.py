@@ -44,6 +44,8 @@ def banka_tespit(text):
     # Senin eski kodundaki tespit mantığının özeti:
     if "KUVEYT" in up: 
         return "kuveytturk"    
+    if "WWW. ZIRAATBANK.COM.TR" in up or  "T.C. ZİRAAT BANKASI A.Ş." in up or "ZİRAAT MOBİL" in up:
+        return "ziraat"     
     if "WWW.ISBANK.COM.TR" in up or "İŞCEP" in up or "ISCEP" in up or "TÜRKİYE İŞ BANKASI A.Ş." in up:
         return "isbank"     
     if "DENIZBANK" in up or "DENİZBANK" in up or "DENIZ GAYRIMENKUL" in up:
@@ -57,9 +59,9 @@ def banka_tespit(text):
     if "WWW.YAPIKREDI.COM.TR" in up or "YAPI VE KREDİ BANKASI A.Ş." in  up or "MERSIS NO: 0937002089200741" in up:
         return "yapikredi"   
     if "4560004685" in up or "0456000468500132" in up or "HALKBANK.COM.TR" in up:
-        return "halkbank"   
-    if "WWW. ZIRAATBANK.COM.TR" in up or  "T.C. ZİRAAT BANKASI A.Ş." in up or "ZİRAAT MOBİL" in up:
-        return "ziraat"  
+        return "halkbank" 
+    if "ZIRAATBANK" in up or "ZİRAAT BANKASI" in up or "ZIRAAT MOBIL" in up:
+        return "ziraat"       
     if "WWW. ING.COM.TR" in up or "ING BANK A.Ş." in up: 
         return "ing"    
     if any(x in up for x in ["VAKIF KATILIM", "VAKIFKATILIM"]): 
