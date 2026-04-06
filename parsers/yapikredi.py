@@ -13,37 +13,43 @@ class YapiKrediParser(BaseParser):
         clean_raw = raw.replace("\n", "  ").replace("\t", " ")
         up = to_turkish_upper(clean_raw)
 
-        # 🎯 YENİ EK: SADECE HAVALE-BORÇ (STAJYER) FORMATI
-        # Bu blok varsa çalışır ve işlemi finalize eder, yoksa eski koda geçer.
-        if "HAVALE-BORÇ" in up and "STAJYER" in up:
-            self.data["is_maas"] = True
+        # 🎯 YENİ FORMAT: HESAPTAN HESABA HAVALE-BORÇ (2026 e-dekont)
+        if "HESAPTAN HESABA HAVALE-BORÇ" in up:
+
             self.data["is_giden"] = True
-            
-            m_g = re.search(r"([^\n\r]+)\s+Ticari Unvan", raw, re.I)
-            if m_g: self.data["gonderen"] = to_turkish_upper(m_g.group(1).strip())
 
-            m_a = re.search(r"STAJYER\s+([^-\n\r/]+)", clean_raw, re.I)
-            if m_a:
-                t_name = to_turkish_upper(m_a.group(1).strip())
-                # İsimden sonrasını temizle
-                self.data["alici"] = re.split(r"\b(MAAŞ|MAAS|ÖDEME|ODEME|OCAK|ŞUBAT|SUBAT|MART|202\d)\b", t_name, flags=re.I)[0].strip()
-
+            # tutar
             m_t = re.search(r"ISLEM TUTARI\s*:\s*-?([\d\.,]+)", clean_raw, re.I)
-            if m_t: self.data["tutar"] = parse_amount(m_t.group(1))
-            
-            m_dt = re.search(r"İŞLEM TARİHİ\s*:\s*(\d{2}\.\d{2}\.\d{4})", clean_raw, re.I)
-            if m_dt: self.data["islemtarihi"] = m_dt.group(1)
+            if m_t:
+                self.data["tutar"] = parse_amount(m_t.group(1))
 
+            # tarih
+            m_dt = re.search(r"İŞLEM TARİHİ\s*:\s*(\d{2}\.\d{2}\.\d{4})", clean_raw, re.I)
+            if m_dt:
+                self.data["islemtarihi"] = m_dt.group(1)
+
+            # gönderen (footer’dan kesin yakalama)
+            m_g = re.search(r"\n([A-ZÇĞİÖŞÜ\s]+)\s+Ticari Unvan", raw, re.I)
+            if m_g:
+                self.data["gonderen"] = to_turkish_upper(m_g.group(1).strip())
+
+            # alıcı (net alan var)
+            m_a = re.search(r"ALACAKLI ADI\s*:\s*([^\n\r]+)", raw, re.I)
+            if m_a:
+                self.data["alici"] = to_turkish_upper(m_a.group(1).strip())
+
+            # IBAN
             m_gi = re.search(r"IBAN NO\s*:\s*(TR[0-9 ]+)", clean_raw, re.I)
-            if m_gi: self.data["gondereniban"] = m_gi.group(1).replace(" ", "")[:26]
-            
+            if m_gi:
+                self.data["gondereniban"] = m_gi.group(1).replace(" ", "")[:26]
+
             m_ai = re.search(r"ALACAKLI HESAP\s*:[^:]*IBAN\s*:\s*(TR[0-9 ]+)", clean_raw, re.I)
-            if m_ai: self.data["aliciiban"] = m_ai.group(1).replace(" ", "")[:26]
+            if m_ai:
+                self.data["aliciiban"] = m_ai.group(1).replace(" ", "")[:26]
 
             return self.finalize()
 
-        # --- BURADAN AŞAĞISI SENİN ESKİ KODUNUN BİREBİR AYNISIDIR ---
-        # --- ÖZEL FORMAT TESPİTİ: MAAŞ ÖDEME RAPORU ---
+        # --- BURADAN AŞAĞISI SENİN ESKİ KODUN ---
         if "MAAŞ ÖDEME RAPORU" in up or "FIRMA ÜNVANI" in up:
             self.data["is_maas"] = True
             self.data["is_giden"] = True
@@ -64,7 +70,7 @@ class YapiKrediParser(BaseParser):
             
             return self.finalize()
 
-        # --- STANDART DEKONT FORMATI ---
+        # --- STANDART DEKONT ---
         if "FAST" in up: self.data["is_fast"] = True
         if "EFT" in up: self.data["is_eft"] = True
         if "MAAŞ" in up or "MAAS" in up: self.data["is_maas"] = True
@@ -75,7 +81,7 @@ class YapiKrediParser(BaseParser):
         else:
             self.data["is_giden"] = True
 
-        m_date = re.search(r"İŞLEM\s*TARİHİ\s*:\s*(\d{2}\.\d.2}\.\d{4})", clean_raw, re.I)
+        m_date = re.search(r"İŞLEM\s*TARİHİ\s*:\s*(\d{2}\.\d{2}\.\d{4})", clean_raw, re.I)
         if m_date: self.data["islemtarihi"] = m_date.group(1)
 
         m_tutar = re.search(r"TUTARI?\s*:\s*(-?[\d\.,]+)", clean_raw, re.I)
