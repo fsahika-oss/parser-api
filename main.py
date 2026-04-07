@@ -12,6 +12,7 @@ from parsers.isbank import IsBankParser
 from parsers.denizbank import DenizbankParser
 from parsers.halkbank import HalkbankParser
 from parsers.ing import IngParser
+from parsers.teb import TebParser
 from parsers.kuveytturk import KuveytTurkParser
 from parsers.vakifkatilim import VakifKatilimParser
 from parsers.generic import GenericParser
