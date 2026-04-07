@@ -56,6 +56,8 @@ def banka_tespit(text):
         return "halkbank"
     if "ING" in head_text:
         return "ing"
+    if "TÜRK EKONOMİ BANKASI" in head_text or "TEB" in head_text:
+        return "teb"        
     if "VAKIF KATILIM" in head_text or "VAKIFKATILIM" in head_text:
         return "vakifkatilim"
 
@@ -98,7 +100,9 @@ def banka_tespit(text):
     if "ZIRAATBANK" in up or "ZİRAAT BANKASI" in up or "ZIRAAT MOBIL" in up:
         return "ziraat"       
     if "WWW. ING.COM.TR" in up or "ING BANK A.Ş." in up: 
-        return "ing"    
+        return "ing" 
+    if "TÜRK EKONOMİ BANKASI" in up or "TEB" in up:
+        return "teb"            
     if any(x in up for x in ["VAKIF KATILIM", "VAKIFKATILIM"]): 
         return "vakifkatilim"       
     if ("AKBANK" in up or "AKBANK T.A.Ş" in up or "WWW.AKBANK.COM" 
@@ -124,6 +128,7 @@ def parse_dekont(filepath):
         "denizbank": DenizbankParser,
         "halkbank": HalkbankParser,
         "ing": IngParser,
+        "teb": TebParser,
         "kuveytturk": KuveytTurkParser,
         "vakifkatilim": VakifKatilimParser,  
         "bilinmiyor": GenericParser      
