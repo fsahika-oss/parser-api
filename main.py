@@ -28,13 +28,48 @@ def extract_text(filepath):
 def banka_tespit(text):
     # 1. Metni satırlara böl
     lines = text.split('\n')
+
+
+
+    # 🔥 YENİ: HEADER (ilk 10 satır) kontrolü
+    head_lines = lines[:10]
+    head_text = "\n".join(head_lines).upper()
+    
+    # HEADER bazlı güçlü tespit
+    if "VAKIFBANK" in head_text:
+        return "vakif"
+    if "GARANTI" in head_text or "GARANTİ" in head_text:
+        return "garanti"
+    if "ZIRAAT" in head_text or "ZİRAAT" in head_text:
+        return "ziraat"
+    if "AKBANK" in head_text:
+        return "akbank"
+    if "YAPI KREDI" in head_text or "YAPIKREDI" in head_text:
+        return "yapikredi"
+    if "IS BANKASI" in head_text or "İŞ BANKASI" in head_text:
+        return "isbank"
+    if "ENPARA" in head_text or "QNB" in head_text:
+        return "enpara"
+    if "KUVEYT" in head_text:
+        return "kuveytturk"
+    if "HALKBANK" in head_text:
+        return "halkbank"
+    if "ING" in head_text:
+        return "ing"
+    if "VAKIF KATILIM" in head_text or "VAKIFKATILIM" in head_text:
+        return "vakifkatilim"
+
+
+
+
+
     
     # 2. Yanıltıcı satırları (AlıcıBanka gibi) temizle
     # Boşluksuz kontrol yaparak "AlıcıBanka" ve "Alıcı Banka" versiyonlarını eliyoruz.
     filtered_lines = []
     for line in lines:
         line_up_no_space = line.upper().replace(" ", "")
-                if any(x in line_up_no_space for x in ["ALICIBANKA", "ALICI BANKA", "ALICI", "KATILIMCI"]):
+        if any(x in line_up_no_space for x in ["ALICIBANKA", "ALICI BANKA", "ALICI", "KATILIMCI"]):
             continue
         filtered_lines.append(line)
     
