@@ -34,7 +34,7 @@ def banka_tespit(text):
     filtered_lines = []
     for line in lines:
         line_up_no_space = line.upper().replace(" ", "")
-        if any(x in line_up_no_space for x in ["ALICIBANKA", "ALICI", "KATILIMCI"]):
+                if any(x in line_up_no_space for x in ["ALICIBANKA", "ALICI BANKA", "ALICI", "KATILIMCI"]):
             continue
         filtered_lines.append(line)
     
