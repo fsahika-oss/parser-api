@@ -65,18 +65,10 @@ class KuveytTurkParser(BaseParser):
         # 'GönderenKişi' etiketinden başlayıp 'Alıcı' etiketine kadar olan kısmı alır
 
         m_g = re.search(
-            r"GönderenKişi\s*(.*?)\s*(?=Alıcı)",
+            r"GönderenKişi\s*:?\s*(.*?)\s*(?=Alıcı)",
             raw,
             re.I | re.S
         )
-
-        # 🔥 YENİ FORMAT : işaretli alanlar
-        if not m_g:
-            m_g = re.search(
-                r"GönderenKişi\s*:?\s*(.*?)\s*(?=Alıcı)",
-                raw,
-                re.I | re.S
-            )
 
         if m_g:
             # İçindeki alt satırları temizleyip tek satıra indirir
@@ -88,18 +80,10 @@ class KuveytTurkParser(BaseParser):
         # 'Alıcı' etiketinden başlayıp 'GönderilenIBAN' etiketine kadar olan kısmı alır
 
         m_a = re.search(
-            r"Alıcı\s*(.*?)\s*(?=GönderilenIBAN)",
+            r"Alıcı\s*:?\s*(.*?)\s*(?=GönderilenIBAN)",
             raw,
             re.I | re.S
         )
-
-        # 🔥 YENİ FORMAT
-        if not m_a:
-            m_a = re.search(
-                r"Alıcı\s*:?\s*(.*?)\s*(?=GönderilenIBAN)",
-                raw,
-                re.I | re.S
-            )
 
         if m_a:
             temiz = " ".join(m_a.group(1).split()).strip()
