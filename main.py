@@ -49,7 +49,7 @@ def banka_tespit(text):
         return "yapikredi"
     if "IS BANKASI" in head_text or "İŞ BANKASI" in head_text:
         return "isbank"
-    if "ENPARA" in head_text or "QNB" in head_text:
+    if re.search(r"\bENPARA\b", head_text) or re.search(r"\bQNB\b", head_text) or re.search(r"\bFİNANSBANK\b", head_text) or re.search(r"\bFINANSBANK\b", head_text):
         return "enpara"
     if "KUVEYT" in head_text:
         return "kuveytturk"
