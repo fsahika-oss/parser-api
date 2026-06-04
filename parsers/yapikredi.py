@@ -49,6 +49,50 @@ class YapiKrediParser(BaseParser):
 
             return self.finalize()
 
+
+        # 🎯 YENİ FORMAT: HESAPTAN HESABA HAVALE-BORÇ (2026 e-dekont)
+        if "HESAPTAN HESABA HAVALE-ALACAK" in up:
+
+            self.data["is_giden"] = True
+
+            # tutar
+            m_t = re.search(r"ISLEM TUTARI\s*:\s*-?([\d\.,]+)", clean_raw, re.I)
+            if m_t:
+                self.data["tutar"] = parse_amount(m_t.group(1))
+
+            # tarih
+            m_dt = re.search(r"İŞLEM TARİHİ\s*:\s*(\d{2}\.\d{2}\.\d{4})", clean_raw, re.I)
+            if m_dt:
+                self.data["islemtarihi"] = m_dt.group(1)
+
+            # gönderen
+            m_g = re.search(r"HAVALEYI\s+GÖNDEREN\s*:\s*([^\n\r]+)", raw, re.I)
+            if m_g:
+                self.data["gonderen"] = to_turkish_upper(m_g.group(1).strip())
+
+            # alıcı
+            aciklama_pos = raw.upper().find("AÇIKLAMA:")
+
+            if aciklama_pos >= 0:
+                footer = raw[aciklama_pos:]            
+
+                m_a = re.search( r"\n([^\n]+?)\s+Ticari\s+Unvan", footer, re.I)
+                if m_a:
+                    self.data["alici"] = to_turkish_upper(m_a.group(1).strip())
+
+
+            # IBAN
+            m_gi = re.search(r"IBAN NO\s*:\s*(TR[0-9 ]+)", clean_raw, re.I)
+            if m_gi:
+                self.data["gondereniban"] = m_gi.group(1).replace(" ", "")[:26]
+
+            m_ai = re.search(r"ALACAKLI HESAP\s*:[^:]*IBAN\s*:\s*(TR[0-9 ]+)", clean_raw, re.I)
+            if m_ai:
+                self.data["aliciiban"] = m_ai.group(1).replace(" ", "")[:26]
+
+            return self.finalize()
+
+
         # --- BURADAN AŞAĞISI SENİN ESKİ KODUN ---
         if "MAAŞ ÖDEME RAPORU" in up or "FIRMA ÜNVANI" in up:
             self.data["is_maas"] = True
