@@ -81,9 +81,7 @@ class EnparaParser(BaseParser):
                 )
 
             if m_tutar:
-                # ÖNEMLİ:
-                # Virgül veya noktayı burada silmiyoruz.
-                # parse_amount() özgün sayı biçimini kendisi çözüyor.
+                # Sayıyı değiştirmeden parse_amount'a gönder.
                 self.data["tutar"] = parse_amount(
                     m_tutar.group(1)
                 )
@@ -156,6 +154,48 @@ class EnparaParser(BaseParser):
                     self.data["aliciiban"] = (
                         m_a_iban.group(1).replace(" ", "").strip()
                     )
+
+            # ---------------------------------------------------------
+            # 5. YENİ QNB MAAŞ DEKONTU İÇİN YEDEK İSİM OKUMA
+            # Mevcut alanlar doluysa üzerlerine yazılmaz.
+            # ---------------------------------------------------------
+            is_qnb_maas_format = (
+                "QNB" in up
+                and self.data.get("is_maas", False)
+                and re.search(r"FIRMA\s+UNVANI\s*:", raw, re.I)
+                and re.search(r"Müşteri\s+No", raw, re.I)
+            )
+
+            if is_qnb_maas_format:
+
+                # Alıcı: Üst bölümde Müşteri No'dan önceki isim.
+                # Örnek: HUZEYFE AKSU Müşteri No 359525145
+                if not self.data.get("alici"):
+                    m_alici_maas = re.search(
+                        r"^\s*([A-ZÇĞİÖŞÜ][A-ZÇĞİÖŞÜ\s.'-]*?)"
+                        r"\s+Müşteri\s+No\b",
+                        raw,
+                        re.I | re.M
+                    )
+
+                    if m_alici_maas:
+                        self.data["alici"] = (
+                            m_alici_maas.group(1).strip()
+                        )
+
+                # Gönderen: Firma ünvanı satırı.
+                # Şirket adının tamamı korunur.
+                if not self.data.get("gonderen"):
+                    m_gonderen_maas = re.search(
+                        r"FIRMA\s+UNVANI\s*:\s*([^\r\n]+)",
+                        raw,
+                        re.I
+                    )
+
+                    if m_gonderen_maas:
+                        self.data["gonderen"] = (
+                            m_gonderen_maas.group(1).strip()
+                        )
 
         else:
             # ---------------------------------------------------------
